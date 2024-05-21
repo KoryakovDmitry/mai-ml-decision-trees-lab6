@@ -231,3 +231,35 @@ class DecisionTree:
         for x in X:
             predicted.append(self._predict_node(x, self._tree))
         return np.array(predicted)
+
+    def _get_depth(self, node):
+        """
+        Рекурсивно вычисляет глубину дерева.
+
+        Parameters
+        ----------
+        node : dict
+            Узел дерева решений.
+
+        Returns
+        -------
+        int
+            Глубина узла.
+        """
+        if node["type"] == "terminal":
+            return 0
+        else:
+            left_depth = self._get_depth(node["left_child"])
+            right_depth = self._get_depth(node["right_child"])
+            return 1 + max(left_depth, right_depth)
+
+    def get_depth(self):
+        """
+        Вычисляет глубину дерева.
+
+        Returns
+        -------
+        int
+            Глубина дерева.
+        """
+        return self._get_depth(self._tree)
