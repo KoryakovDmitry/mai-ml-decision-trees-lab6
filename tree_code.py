@@ -2,7 +2,9 @@ import numpy as np
 from collections import Counter
 
 
-def find_best_split(feature_vector, target_vector):
+def find_best_split(
+    feature_vector: np.ndarray, target_vector: np.ndarray
+) -> (np.ndarray, np.ndarray, float, float):
     """
     Находит оптимальный порог для разбиения вектора признака по критерию Джини.
 
@@ -46,11 +48,46 @@ def find_best_split(feature_vector, target_vector):
         Оптимальный порог для разбиения.
     gini_best : float
         Оптимальное значение критерия Джини.
-
     """
-    # ╰( ͡☉ ͜ʖ ͡☉ )つ──☆*:・ﾟ   ฅ^•ﻌ•^ฅ   ʕ•ᴥ•ʔ
 
-    pass
+    sorted_indices = np.argsort(feature_vector)
+    feature_vector = feature_vector[sorted_indices]
+    target_vector = target_vector[sorted_indices]
+
+    unique_values = np.unique(feature_vector)
+    if len(unique_values) == 1:
+        return np.array([]), np.array([]), None, None
+
+    thresholds = (unique_values[:-1] + unique_values[1:]) / 2
+
+    def gini(groups):
+        total_instances = float(sum([len(group) for group in groups]))
+        gini = 0.0
+        for group in groups:
+            size = float(len(group))
+            if size == 0:
+                continue
+            score = 0.0
+            for class_val in [0, 1]:
+                p = [row for row in group].count(class_val) / size
+                score += p * p
+            gini += (1.0 - score) * (size / total_instances)
+        return gini
+
+    best_gini = float("inf")
+    best_threshold = None
+    ginis = []
+
+    for threshold in thresholds:
+        left_group = target_vector[feature_vector <= threshold]
+        right_group = target_vector[feature_vector > threshold]
+        gini_score = gini([left_group, right_group])
+        ginis.append(gini_score)
+        if gini_score < best_gini:
+            best_gini = gini_score
+            best_threshold = threshold
+
+    return thresholds, np.array(ginis), best_threshold, best_gini
 
 
 class DecisionTree:
