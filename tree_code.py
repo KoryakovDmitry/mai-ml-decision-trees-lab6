@@ -62,7 +62,7 @@ def find_best_split(
 
     thresholds = (unique_values[:-1] + unique_values[1:]) / 2
 
-    def gini(groups):
+    def gini(groups, classes):
         total_instances = float(sum([len(group) for group in groups]))
         gini = 0.0
         for group in groups:
@@ -70,12 +70,13 @@ def find_best_split(
             if size == 0:
                 continue
             score = 0.0
-            for class_val in [0, 1]:
-                p = [row for row in group].count(class_val) / size
+            for class_val in classes:
+                p = (group == class_val).sum() / size
                 score += p * p
             gini += (1.0 - score) * (size / total_instances)
         return gini
 
+    classes = np.unique(target_vector)
     best_gini = float("inf")
     best_threshold = None
     ginis = []
@@ -83,7 +84,7 @@ def find_best_split(
     for threshold in thresholds:
         left_group = target_vector[feature_vector <= threshold]
         right_group = target_vector[feature_vector > threshold]
-        gini_score = gini([left_group, right_group])
+        gini_score = gini([left_group, right_group], classes)
         ginis.append(gini_score)
         if gini_score < best_gini:
             best_gini = gini_score
@@ -125,7 +126,8 @@ class DecisionTree:
             Узел дерева, который будет заполнен информацией о разбиении.
 
         """
-        if np.all(sub_y == sub_y[0]):
+        # Stopping criterion: all objects are of the same class or the selection cannot be split.
+        if np.all(sub_y == sub_y[0]) or sub_X.shape[0] <= 1:
             node["type"] = "terminal"
             node["class"] = sub_y[0]
             return
