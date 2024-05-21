@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 from collections import Counter
 
@@ -107,7 +109,7 @@ class DecisionTree:
         self._min_samples_split = min_samples_split
         self._min_samples_leaf = min_samples_leaf
 
-    def _fit_node(self, sub_X, sub_y, node):
+    def _fit_node(self, sub_X: np.ndarray, sub_y: np.ndarray, node: Dict):
         """
         Обучение узла дерева решений.
 
@@ -154,7 +156,7 @@ class DecisionTree:
 
             _, _, threshold, gini = find_best_split(feature_vector, sub_y)
 
-            if gini_best is None or gini > gini_best:
+            if gini_best is None or gini < gini_best:
                 feature_best = feature
                 gini_best = gini
                 split = feature_vector < threshold
@@ -185,7 +187,7 @@ class DecisionTree:
         self._fit_node(sub_X[split], sub_y[split], node["left_child"])
         self._fit_node(sub_X[~split], sub_y[~split], node["right_child"])
 
-    def _predict_node(self, x, node):
+    def _predict_node(self, x: np.ndarray, node: Dict) -> int:
         """
         Рекурсивное предсказание класса для одного объекта по узлу дерева решений.
 
@@ -204,8 +206,20 @@ class DecisionTree:
         int
             Предсказанный класс объекта.
         """
-        # ╰( ͡☉ ͜ʖ ͡☉ )つ──☆*:・ﾟ   ฅ^•ﻌ•^ฅ   ʕ•ᴥ•ʔ
-        pass
+        if node["type"] == "terminal":
+            return node["class"]
+        if self._feature_types[node["feature_split"]] == "real":
+            if x[node["feature_split"]] < node["threshold"]:
+                return self._predict_node(x, node["left_child"])
+            else:
+                return self._predict_node(x, node["right_child"])
+        elif self._feature_types[node["feature_split"]] == "categorical":
+            if x[node["feature_split"]] in node["categories_split"]:
+                return self._predict_node(x, node["left_child"])
+            else:
+                return self._predict_node(x, node["right_child"])
+        else:
+            raise ValueError("Incorrect feature type")
 
     def fit(self, X, y):
         self._fit_node(X, y, self._tree)
